@@ -1,16 +1,22 @@
 package program;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.ForkJoinPool;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class Strassen {
 
     // Classe représentant une tâche Strassen
     static class TacheStrassen extends RecursiveTask<int[][]> {
         private final int[][] A, B;
-        private final int debutLigneA, debutColonneA, debutLigneB, debutColonneB, taille;
+        private final int debutLigneA, debutColonneA, debutLigneB, debutColonneB, taille, tailleDecoupageMatrice;
 
-        public TacheStrassen(int[][] A, int[][] B, int debutLigneA, int debutColonneA, int debutLigneB, int debutColonneB, int taille) {
+        public TacheStrassen(int[][] A, int[][] B, int debutLigneA, int debutColonneA, int debutLigneB, int debutColonneB, int taille, int tailleDecoupageMatrice) {
             this.A = A;
             this.B = B;
             this.debutLigneA = debutLigneA;
@@ -18,11 +24,13 @@ public class Strassen {
             this.debutLigneB = debutLigneB;
             this.debutColonneB = debutColonneB;
             this.taille = taille;
+            this.tailleDecoupageMatrice = tailleDecoupageMatrice;
         }
 
         @Override
         protected int[][] compute() {
-            if (taille <= 64) { // Taille limite pour laquelle nous effectuons la multiplication standard
+            //System.out.println(Thread.currentThread().getName());
+            if (taille <= tailleDecoupageMatrice) { // Taille limite pour laquelle nous effectuons la multiplication standard
                 return multiplierStandard(A, B, debutLigneA, debutColonneA, debutLigneB, debutColonneB, taille);
             }
 
@@ -39,14 +47,38 @@ public class Strassen {
             int[][] b21 = sousMatrice(B, debutLigneB + nouvelleTaille, debutColonneB, nouvelleTaille);
             int[][] b22 = sousMatrice(B, debutLigneB + nouvelleTaille, debutColonneB + nouvelleTaille, nouvelleTaille);
 
+            /*  Affichage des différentes matrices
+
+            System.out.println("-------------------- Matrice a11 --------------------");
+            printMatrice(a11);
+            System.out.println("-------------------- Matrice a12 --------------------");
+            printMatrice(a12);
+            System.out.println("-------------------- Matrice a21 --------------------");
+            printMatrice(a21);
+            System.out.println("-------------------- Matrice a22 --------------------");
+            printMatrice(a22);
+
+            System.out.println("-------------------- Matrice b11 --------------------");
+            printMatrice(b11);
+            System.out.println("-------------------- Matrice b12 --------------------");
+            printMatrice(b12);
+            System.out.println("-------------------- Matrice b21 --------------------");
+            printMatrice(b21);
+            System.out.println("-------------------- Matrice b22 --------------------");
+            printMatrice(b22);
+            System.out.println("-----------------------------------------------------");
+             */
+
+
+
             // Calculer les produits intermédiaires
-            TacheStrassen p1 = new TacheStrassen(additionner(a11, a22), additionner(b11, b22), 0, 0, 0, 0, nouvelleTaille);
-            TacheStrassen p2 = new TacheStrassen(additionner(a21, a22), b11, 0, 0, 0, 0, nouvelleTaille);
-            TacheStrassen p3 = new TacheStrassen(a11, soustraire(b12, b22), 0, 0, 0, 0, nouvelleTaille);
-            TacheStrassen p4 = new TacheStrassen(a22, soustraire(b21, b11), 0, 0, 0, 0, nouvelleTaille);
-            TacheStrassen p5 = new TacheStrassen(additionner(a11, a12), b22, 0, 0, 0, 0, nouvelleTaille);
-            TacheStrassen p6 = new TacheStrassen(soustraire(a21, a11), additionner(b11, b12), 0, 0, 0, 0, nouvelleTaille);
-            TacheStrassen p7 = new TacheStrassen(soustraire(a12, a22), additionner(b21, b22), 0, 0, 0, 0, nouvelleTaille);
+            TacheStrassen p1 = new TacheStrassen(additionner(a11, a22), additionner(b11, b22), 0, 0, 0, 0, nouvelleTaille, tailleDecoupageMatrice);
+            TacheStrassen p2 = new TacheStrassen(additionner(a21, a22), b11, 0, 0, 0, 0, nouvelleTaille, tailleDecoupageMatrice);
+            TacheStrassen p3 = new TacheStrassen(a11, soustraire(b12, b22), 0, 0, 0, 0, nouvelleTaille, tailleDecoupageMatrice);
+            TacheStrassen p4 = new TacheStrassen(a22, soustraire(b21, b11), 0, 0, 0, 0, nouvelleTaille, tailleDecoupageMatrice);
+            TacheStrassen p5 = new TacheStrassen(additionner(a11, a12), b22, 0, 0, 0, 0, nouvelleTaille, tailleDecoupageMatrice);
+            TacheStrassen p6 = new TacheStrassen(soustraire(a21, a11), additionner(b11, b12), 0, 0, 0, 0, nouvelleTaille, tailleDecoupageMatrice);
+            TacheStrassen p7 = new TacheStrassen(soustraire(a12, a22), additionner(b21, b22), 0, 0, 0, 0, nouvelleTaille, tailleDecoupageMatrice);
 
             // Fork les tâches
             invokeAll(p1, p2, p3, p4, p5, p6, p7);
@@ -127,19 +159,55 @@ public class Strassen {
         return resultat;
     }
 
-    public static void main(String[] args) {
-        // Exemple d'utilisation
-        ForkJoinPool pool = new ForkJoinPool();
-        int[][] matriceA = {{1, 2}, {3, 4}};
-        int[][] matriceB = {{5, 6}, {7, 8}};
-        int[][] resultat = pool.invoke(new TacheStrassen(matriceA, matriceB, 0, 0, 0, 0, 2));
+    private static int[][] initMatrice(int tailleMatrice){
+        int[][] matrice = new int[tailleMatrice][tailleMatrice];
+        int nb = (int) (Math.random() * 3) +1;
+        for(int i = 0; i < tailleMatrice; i++){
+            for (int j = 0; j < tailleMatrice; j++){
+                matrice[i][j] = nb;
+                nb = (int) (Math.random() * 3) + 1;
+            }
+        }
 
+        System.out.println(" --------------- Matrice générée : ---------------------");
+        printMatrice(matrice);
+        return matrice;
+    }
+
+    private static void printMatrice(int[][] resultat) {
         // Affichage du résultat
         for (int i = 0; i < resultat.length; i++) {
             for (int j = 0; j < resultat[0].length; j++) {
                 System.out.print(resultat[i][j] + " ");
             }
             System.out.println();
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("Début du programme");
+
+        // Exemple d'utilisation
+        /*
+        ForkJoinPool pool = new ForkJoinPool();
+        int[][] matriceA = {{1, 2}, {3, 4}};
+        int[][] matriceB = {{5, 6}, {7, 8}};
+        int[][] resultat = pool.invoke(new TacheStrassen(matriceA, matriceB, 0, 0, 0, 0, 2));
+        */
+
+        int tailleMatrice = 1024;
+
+        ForkJoinPool pool = new ForkJoinPool();
+        int[][] resultat = pool.invoke(new TacheStrassen(initMatrice( tailleMatrice), initMatrice( tailleMatrice),
+                0, 0, 0, 0, tailleMatrice, 2));
+
+        System.out.println("------------- Résultat final -------------");
+        printMatrice(resultat);
+
+        try{
+            PrintStream out = new PrintStream(new FileOutputStream("output.txt"));
+        }catch (FileNotFoundException e){
+            System.out.println("pas de fichier");
         }
     }
 }
