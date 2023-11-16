@@ -1,21 +1,57 @@
 package program;
-
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.ForkJoinPool;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+
 
 public class Strassen {
 
     // Classe représentant une tâche Strassen
     static class TacheStrassen extends RecursiveTask<int[][]> {
-        private final int[][] A, B;
-        private final int debutLigneA, debutColonneA, debutLigneB, debutColonneB, taille, tailleDecoupageMatrice;
 
+        /**
+         * Première Matrice a traiter
+         */
+        private final int[][] A;
+        /**
+         * Deuxième Matrice a traiter
+         */
+        private final int[][] B;
+        /**
+         * Ligne de début de la matrice A
+         */
+        private final int debutLigneA;
+        /**
+         * Colonne de début de la matrice A
+         */
+        private final int debutColonneA;
+        /**
+         * Ligne de début de la matrice B
+         */
+        private final int debutLigneB;
+        /**
+         * Colonne de début de la matrice B
+         */
+        private final int debutColonneB;
+        /**
+         * Représente la taille des matrices
+         */
+        private final int taille;
+        /**
+         * Représente la taille que doit avoir les matrices avant de pouvoir être traitées
+         */
+        private final int tailleDecoupageMatrice;
+
+        /**
+         * Constructeur de la classe TacheStrassen
+         * @param A Première matrice
+         * @param B Deuxième Matrice
+         * @param debutLigneA Ligne de début de la matrice A
+         * @param debutColonneA Colonne de début de la matrice A
+         * @param debutLigneB Ligne de début de la matrice B
+         * @param debutColonneB Colonne de début de la matrice B
+         * @param taille Représente la taille des matrices
+         * @param tailleDecoupageMatrice Représente la taille que la matrice doit atteindre pour pouvoir être traitée
+         */
         public TacheStrassen(int[][] A, int[][] B, int debutLigneA, int debutColonneA, int debutLigneB, int debutColonneB, int taille, int tailleDecoupageMatrice) {
             this.A = A;
             this.B = B;
@@ -69,8 +105,6 @@ public class Strassen {
             System.out.println("-----------------------------------------------------");
              */
 
-
-
             // Calculer les produits intermédiaires
             TacheStrassen p1 = new TacheStrassen(additionner(a11, a22), additionner(b11, b22), 0, 0, 0, 0, nouvelleTaille, tailleDecoupageMatrice);
             TacheStrassen p2 = new TacheStrassen(additionner(a21, a22), b11, 0, 0, 0, 0, nouvelleTaille, tailleDecoupageMatrice);
@@ -95,6 +129,13 @@ public class Strassen {
     }
 
     // Fonction d'addition de matrices
+
+    /**
+     * Additionne deux matrices entre elles
+     * @param A Première Matrice
+     * @param B Seconde Matrice
+     * @return Retourne une sous-matrice résultante de l'addition
+     */
     private static int[][] additionner(int[][] A, int[][] B) {
         int n = A.length;
         int[][] resultat = new int[n][n];
@@ -107,6 +148,13 @@ public class Strassen {
     }
 
     // Fonction de soustraction de matrices
+
+    /**
+     * Soustrait deux matrices entre elles
+     * @param A Première Matrice
+     * @param B Seconde Matrice
+     * @return Retourne une sous-matrice résultante de la soustraction
+     */
     private static int[][] soustraire(int[][] A, int[][] B) {
         int n = A.length;
         int[][] resultat = new int[n][n];
@@ -119,6 +167,17 @@ public class Strassen {
     }
 
     // Fonction de multiplication de matrices standard
+    /**
+     * Multiplie deux matrice entre-elle
+     * @param A Première matrice
+     * @param B Deuxième matrice
+     * @param debutLigneA Ligne de début de la multiplication
+     * @param debutColonneA Colonne de début de la  multiplication
+     * @param debutLigneB Ligne de début de la multiplication
+     * @param debutColonneB Colonne de début de la  multiplication
+     * @param taille Taille de la matrice
+     * @return Retourne une sous-matrice résultante de la multiplication
+     */
     private static int[][] multiplierStandard(int[][] A, int[][] B, int debutLigneA, int debutColonneA, int debutLigneB, int debutColonneB, int taille) {
         int[][] resultat = new int[taille][taille];
         for (int i = 0; i < taille; i++) {
@@ -132,6 +191,14 @@ public class Strassen {
     }
 
     // Fonction pour extraire une sous-matrice à partir d'une matrice donnée
+    /**
+     * Permet de créer une sous-matrice en fonction d'une matrice mère
+     * @param matrice La matrice mère
+     * @param debutLigne La ligne de début de la matrice mère
+     * @param debutColonne La colone de début de la matrice mère
+     * @param taille La taille de la matrice fille
+     * @return Une matrice contenant la partie de la matrice mère correspondant au debutLigne et debutColonne
+     */
     private static int[][] sousMatrice(int[][] matrice, int debutLigne, int debutColonne, int taille) {
         int[][] resultat = new int[taille][taille];
         for (int i = 0; i < taille; i++) {
@@ -143,6 +210,15 @@ public class Strassen {
     }
 
     // Fonction pour combiner les sous-résultats en une seule matrice résultante
+    /**
+     * Rassemble les 4 parties de la matrice mère après les différents calcules
+     * @param c11 Matrice fille
+     * @param c12 Matrice fille
+     * @param c21 Matrice fille
+     * @param c22 Matrice fille
+     * @param taille Taille des matrices filles
+     * @return Retourne la matrice mère
+     */
     private static int[][] combiner(int[][] c11, int[][] c12, int[][] c21, int[][] c22, int taille) {
         int nouvelleTaille = taille * 2;
         int[][] resultat = new int[nouvelleTaille][nouvelleTaille];
@@ -159,21 +235,30 @@ public class Strassen {
         return resultat;
     }
 
+    /**
+     * Initialise une matrice de taille *tailleMatrice* avec un chiffre aléatoire entre 1 et 3
+     * @param tailleMatrice La taille de la matrice
+     * @return Retourne une matrice de taille : *tailleMatrice* x *tailleMatrice*
+     */
     private static int[][] initMatrice(int tailleMatrice){
         int[][] matrice = new int[tailleMatrice][tailleMatrice];
         int nb = (int) (Math.random() * 3) +1;
         for(int i = 0; i < tailleMatrice; i++){
             for (int j = 0; j < tailleMatrice; j++){
                 matrice[i][j] = nb;
-                nb = (int) (Math.random() * 3) + 1;
+                nb = (int) (Math.random() * 3) + 1;     //      Stocke un chiffre entre 1 et 3 dans nb
             }
         }
-
         System.out.println(" --------------- Matrice générée : ---------------------");
         printMatrice(matrice);
         return matrice;
     }
 
+
+    /**
+     * Affiche une matrice de int[][]
+     * @param resultat Matrice à afficher
+     */
     private static void printMatrice(int[][] resultat) {
         // Affichage du résultat
         for (int i = 0; i < resultat.length; i++) {
@@ -186,7 +271,6 @@ public class Strassen {
 
     public static void main(String[] args) {
         System.out.println("Début du programme");
-
         // Exemple d'utilisation
         /*
         ForkJoinPool pool = new ForkJoinPool();
@@ -195,19 +279,15 @@ public class Strassen {
         int[][] resultat = pool.invoke(new TacheStrassen(matriceA, matriceB, 0, 0, 0, 0, 2));
         */
 
-        int tailleMatrice = 1024;
+        //Initialisation de la taille de la matrice
+        int tailleMatrice = 16;
 
+        //Initialise la pool de Thread
         ForkJoinPool pool = new ForkJoinPool();
         int[][] resultat = pool.invoke(new TacheStrassen(initMatrice( tailleMatrice), initMatrice( tailleMatrice),
                 0, 0, 0, 0, tailleMatrice, 2));
 
         System.out.println("------------- Résultat final -------------");
         printMatrice(resultat);
-
-        try{
-            PrintStream out = new PrintStream(new FileOutputStream("output.txt"));
-        }catch (FileNotFoundException e){
-            System.out.println("pas de fichier");
-        }
     }
 }
